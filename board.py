@@ -4,7 +4,6 @@ import sys
 from random import randint
 from math import atan, pi, cos, sin
 
-
 pygame.init()
 pygame.display.set_caption('We need to rename this')
 size = width, height = 1100, 800
@@ -212,6 +211,60 @@ hero = Hero(hero_group)
 shoot_group = pygame.sprite.Group()
 zombie_group = pygame.sprite.Group()
 
+
+def start_screen():
+    intro_text = ["Перемещение героя - " "Клавиши WASD",
+                  "Стрельба - " " Мышь",
+                  "Цель:", "Пройти 3 этажа и ВЫЖИТЬ"]
+
+    fon = pygame.transform.scale(load_image('start_screen.png'), (1100, 800))
+    screen.blit(fon, (0, 0))
+    font = pygame.font.Font(None, 30)
+    text_coord = 50
+    for line in intro_text:
+        string_rendered = font.render(line, 1, pygame.Color('black'))
+        intro_rect = string_rendered.get_rect()
+        text_coord += 10
+        intro_rect.top = text_coord
+        intro_rect.x = 10
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN or \
+                    event.type == pygame.MOUSEBUTTONDOWN:
+                return
+        pygame.display.flip()
+        clock.tick(50)
+
+
+def final_screen():
+    intro_text = ["                                      Победа!!!!!"]
+
+    fon = pygame.transform.scale(load_image('final_screen.png'), (1100, 800))
+    screen.blit(fon, (0, 0))
+    font = pygame.font.Font(None, 30)
+    text_coord = 50
+    for line in intro_text:
+        string_rendered = font.render(line, 1, pygame.Color('white'))
+        intro_rect = string_rendered.get_rect()
+        text_coord += 10
+        intro_rect.top = text_coord
+        intro_rect.x = 10
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+        pygame.display.flip()
+        clock.tick(50)
+
+start_screen()
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
