@@ -45,26 +45,47 @@ def rotate_image(image, angle, x, y):
 
 
 class Board(pygame.sprite.Sprite):
-    image = load_image('board.png', size=(50, 50))
+    board_image = load_image('board.png', size=(50, 50))
 
     def __init__(self, group, x, y):
         super().__init__(all_sprites, group)
-        self.image = rotate_image(Board.image, randint(0, 4) * 90, x + 25, y + 25)[0]
+        self.image = rotate_image(Board.board_image, randint(0, 4) * 90, x + Board.board_image.get_rect().width // 2,
+                                  y + Board.board_image.get_rect().height // 2)[0]
         self.rect = self.image.get_rect()
-        self.rect.x, self.rect.y = x * 50, y * 50
+        self.rect.x, self.rect.y = x * Board.board_image.get_rect().width, y * Board.board_image.get_rect().height
+
+
+class Wall(pygame.sprite.Sprite):
+    wall_image = load_image('wall.png', size=(50, 50))
+
+    def __init__(self, group, angle, x, y):
+        super().__init__(all_sprites, group)
+        self.image = rotate_image(Wall.wall_image, angle, x + Wall.wall_image.get_rect().width // 2,
+                                  y + Wall.wall_image.get_rect().height // 2)[0]
+        self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = x * Wall.wall_image.get_rect().width, y * Wall.wall_image.get_rect().height
 
 
 board_group = pygame.sprite.Group()
-for i in range(width // 50):
-    for j in range(height // 50):
+for i in range(width // Board.board_image.get_rect().width):
+    for j in range(height // Board.board_image.get_rect().height):
         Board(board_group, i, j)
+
+wall_group = pygame.sprite.Group()
+for i in range(width // Wall.wall_image.get_rect().width):
+    Wall(wall_group, 0, i, 0)
+    Wall(wall_group, 0, i, height // Wall.wall_image.get_rect().height - 1)
+for i in range(height // Wall.wall_image.get_rect().height):
+    Wall(wall_group, 90, 0, i)
+    Wall(wall_group, 90, width // Wall.wall_image.get_rect().width - 1, i)
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
     screen.fill(pygame.Color('black'))
-    board_group.draw(screen)
+    all_sprites.draw(screen)
     pygame.display.flip()
     clock.tick(fps)
 
