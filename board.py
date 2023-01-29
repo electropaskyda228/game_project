@@ -11,9 +11,12 @@ size = width, height = 1100, 800
 screen = pygame.display.set_mode(size)
 running = True
 all_sprites = pygame.sprite.Group()
+now = pygame.sprite.Group()
 clock = pygame.time.Clock()
 fps = 30
 left_button_pressed = False
+spavn_event = pygame.USEREVENT + 1
+pygame.time.set_timer(spavn_event, 2000)
 
 
 def terminate():
@@ -60,7 +63,7 @@ class Wall(pygame.sprite.Sprite):
     wall_image = load_image('wall.png', size=(50, 50))
 
     def __init__(self, group, angle, x, y):
-        super().__init__(all_sprites, group)
+        super().__init__(all_sprites, now, group)
         self.image = pygame.transform.rotate(Wall.wall_image, angle)
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = x * Wall.wall_image.get_rect().width, y * Wall.wall_image.get_rect().height
@@ -69,13 +72,17 @@ class Wall(pygame.sprite.Sprite):
 class Hero(pygame.sprite.Sprite):
     hero_image = load_image('hero7.png', size=(65, 52))
 
-    def __init__(self, group, x, y):
+    def __init__(self, group):
         super().__init__(all_sprites, group)
         self.image = Hero.hero_image
         self.rect = self.image.get_rect()
-        self.rect.x, self.rect.y = x, y
+        self.rect.x, self.rect.y = randint(0, width), randint(0, height)
+        while pygame.sprite.spritecollideany(self, now):
+            self.rect.x, self.rect.y = randint(0, width), randint(0, height)
+        now.add(self)
         self.direction = 0
         self.v = 5
+        self.hp = 500
 
     def change_direction(self, pos):
         if pos[0] - self.rect.centerx != 0:
@@ -92,7 +99,7 @@ class Hero(pygame.sprite.Sprite):
 
     def move(self, v_x, v_y):
         self.rect = self.rect.move(v_x * self.v, v_y * self.v)
-        if pygame.sprite.spritecollideany(self, wall_group):
+        if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self, box_group):
             self.rect = self.rect.move(-v_x * self.v, -v_y * self.v)
 
 
@@ -113,8 +120,68 @@ class Shoot(pygame.sprite.Sprite):
         self.rect = self.rect.move(self.v * cos(self.direction), - self.v * sin(self.direction))
         if pygame.sprite.spritecollideany(self, wall_group) or self.rect.centerx > width or self.rect.centerx < 0 or \
                 self.rect.centery < 0 or self.rect.centery > height or \
-                pygame.sprite.spritecollideany(self, zoombie_group):
+                pygame.sprite.spritecollideany(self, zombie_group) or pygame.sprite.spritecollideany(self, box_group):
+            zombie = pygame.sprite.spritecollideany(self, zombie_group)
+            if zombie:
+                zombie.hp -= 1
             self.kill()
+
+
+class Zombie(pygame.sprite.Sprite):
+    zombie_image = load_image('monstr.png', size=(65, 52))
+
+    def __init__(self, group):
+        super().__init__(all_sprites, group)
+        self.image = Zombie.zombie_image
+        self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = randint(0, width), randint(0, height)
+        while pygame.sprite.spritecollideany(self, now):
+            self.rect.x, self.rect.y = randint(0, width), randint(0, height)
+        now.add(self)
+        self.direction = 0
+        self.change_direction()
+        self.v = 5
+        self.hp = randint(1, 10)
+
+    def change_direction(self):
+        if hero.rect.centerx - self.rect.centerx != 0:
+            angle = atan((self.rect.centery - hero.rect.centery) / (hero.rect.centerx - self.rect.centerx))
+        elif hero.rect.centery > self.rect.centery:
+            angle = - pi / 2
+        else:
+            angle = pi / 2
+        if hero.rect.centerx < self.rect.centerx:
+            angle += pi
+        angle = angle / pi * 180
+        self.image, self.rect = rotate_image(Zombie.zombie_image, angle, self.rect.center)
+        self.direction = angle
+
+    def update(self):
+        if self.hp <= 0:
+            self.kill()
+        self.rect = self.rect.move(self.v * cos(self.direction), 0)
+        if pygame.sprite.collide_rect(self, hero):
+            hero.hp -= 100
+            self.kill()
+        if pygame.sprite.spritecollideany(self, box_group) or pygame.sprite.spritecollideany(self, wall_group):
+            self.rect = self.rect.move(- self.v * cos(self.direction), 0)
+        self.rect = self.rect.move(0, - self.v * sin(self.direction))
+        if pygame.sprite.spritecollideany(self, box_group) or pygame.sprite.spritecollideany(self, wall_group):
+            self.rect = self.rect.move(0, self.v * sin(self.direction))
+        self.change_direction()
+
+
+class Box(pygame.sprite.Sprite):
+    box_image = load_image('box2.jpg', size=(50, 50))
+
+    def __init__(self, group):
+        super().__init__(all_sprites, group)
+        self.image = Box.box_image
+        self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = randint(0, width), randint(0, height)
+        while pygame.sprite.spritecollideany(self, now):
+            self.rect.x, self.rect.y = randint(0, width), randint(0, height)
+        now.add(self)
 
 
 board_group = pygame.sprite.Group()
@@ -136,10 +203,14 @@ for i in range(height // Wall.wall_image.get_rect().height):
     Wall(wall_group, 90, 0, i)
     Wall(wall_group, 90, width // Wall.wall_image.get_rect().width - 1, i)
 
+box_group = pygame.sprite.Group()
+for i in range(randint(2, 10)):
+    Box(box_group)
+
 hero_group = pygame.sprite.Group()
-hero = Hero(hero_group, 100, 100)
+hero = Hero(hero_group)
 shoot_group = pygame.sprite.Group()
-zoombie_group = pygame.sprite.Group()
+zombie_group = pygame.sprite.Group()
 
 while running:
     for event in pygame.event.get():
@@ -152,6 +223,8 @@ while running:
             left_button_pressed = True
         if event.type == pygame.MOUSEBUTTONUP and not pygame.mouse.get_pressed()[0]:
             left_button_pressed = False
+        if event.type == spavn_event:
+            Zombie(zombie_group)
 
     all_key = pygame.key.get_pressed()
     if all_key[pygame.K_d]:
