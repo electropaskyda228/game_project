@@ -3,6 +3,7 @@ import os
 import sys
 from random import randint
 from math import atan, pi, cos, sin
+from Random_Rooms import random_rooms
 
 pygame.init()
 pygame.display.set_caption('We need to rename this')
@@ -183,10 +184,25 @@ class Box(pygame.sprite.Sprite):
         now.add(self)
 
 
+def new_room():
+    if hero.rect[0] <= 0:
+        hero.rect.x, hero.rect.y = 999, 370
+        for i in board_group:
+            i.rect.x, i.rect.y = i.rect.x - 1100, i.rect.y
+    if hero.rect[0] >= width:
+        hero.rect.x, hero.rect.y = 10, 370
+    if hero.rect[1] <= 0:
+        hero.rect.x, hero.rect.y = 530, 750
+    if hero.rect[1] >= height:
+        hero.rect.x, hero.rect.y = 530, 10
+
+
 board_group = pygame.sprite.Group()
-for i in range(width // Board.board_image.get_rect().width):
-    for j in range(height // Board.board_image.get_rect().height):
-        Board(board_group, i, j)
+rooms = random_rooms()
+for n in rooms:
+    for i in range(width // Board.board_image.get_rect().width):
+        for j in range(height // Board.board_image.get_rect().height):
+            Board(board_group, i + n[0], j + n[1])
 
 wall_group = pygame.sprite.Group()
 for i in range(width // Wall.wall_image.get_rect().width):
@@ -215,7 +231,7 @@ zombie_group = pygame.sprite.Group()
 def start_screen():
     intro_text = ["Перемещение героя - " "Клавиши WASD",
                   "Стрельба - " " Мышь",
-                  "Цель:", "Пройти 3 этажа и ВЫЖИТЬ"]
+                  "Цель:", "Найти выход и ВЫЖИТЬ"]
 
     fon = pygame.transform.scale(load_image('start_screen.png'), (1100, 800))
     screen.blit(fon, (0, 0))
@@ -241,15 +257,21 @@ def start_screen():
         clock.tick(50)
 
 
-def final_screen():
-    intro_text = ["                                      Победа!!!!!"]
-
-    fon = pygame.transform.scale(load_image('final_screen.png'), (1100, 800))
+def final_screen(flag):
+    if flag:
+        name = 'loose_screen.webp'
+        intro_text = ["","","","","","","","                                                                                  Поражение"]
+        color = 'red'
+    else:
+        name = 'final_screen.jpg'
+        intro_text = ["                                      Победа!!!!!"]
+        color = 'white'
+    fon = pygame.transform.scale(load_image(name), (1100, 800))
     screen.blit(fon, (0, 0))
     font = pygame.font.Font(None, 30)
     text_coord = 50
     for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color('white'))
+        string_rendered = font.render(line, 1, pygame.Color(color))
         intro_rect = string_rendered.get_rect()
         text_coord += 10
         intro_rect.top = text_coord
@@ -263,6 +285,7 @@ def final_screen():
                 terminate()
         pygame.display.flip()
         clock.tick(50)
+
 
 start_screen()
 while running:
@@ -288,6 +311,9 @@ while running:
         hero.move(0, -1)
     if all_key[pygame.K_s]:
         hero.move(0, 1)
+    new_room()
+    if hero.hp == 0:
+        final_screen(True)
 
     screen.fill(pygame.Color('black'))
     all_sprites.draw(screen)
