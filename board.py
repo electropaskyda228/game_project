@@ -4,9 +4,10 @@ import sys
 from random import randint
 from math import atan, pi, cos, sin
 from Random_Rooms import random_rooms
+import datetime
 
 pygame.init()
-pygame.display.set_caption('We need to rename this')
+pygame.display.set_caption('SURVIVE!!!!!!!!!')
 size = width, height = 1100, 800
 screen = pygame.display.set_mode(size)
 running = True
@@ -17,6 +18,7 @@ fps = 30
 left_button_pressed = False
 spavn_event = pygame.USEREVENT + 1
 pygame.time.set_timer(spavn_event, 2000)
+weapon = 0
 
 
 def terminate():
@@ -83,6 +85,8 @@ class Hero(pygame.sprite.Sprite):
         self.direction = 0
         self.v = 5
         self.hp = 500
+        self.weapon = 0
+        self.ammo = 0
 
     def change_direction(self, pos):
         if pos[0] - self.rect.centerx != 0:
@@ -103,15 +107,43 @@ class Hero(pygame.sprite.Sprite):
             self.rect = self.rect.move(-v_x * self.v, -v_y * self.v)
 
 
+class HP(pygame.sprite.Sprite):
+    def __init__(self):
+        if hero.hp == 500:
+            name = 'HP_1.png'
+        elif hero.hp == 400 or hero.hp == 300:
+            name = 'HP_2.png'
+        elif hero.hp == 200:
+            name = 'HP_3.png'
+        elif hero.hp == 100:
+            name = 'HP_4.png'
+        else:
+            return
+        super().__init__(all_sprites, all_sprites)
+        hp_image = load_image(name, size=(200, 100))
+        self.image = hp_image
+        self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = 900, 700
+
+
 class Shoot(pygame.sprite.Sprite):
     shoot_image = pygame.Surface([10, 10])
 
-    def __init__(self, group, x, y, angle):
+    def __init__(self, group, x, y, angle, weapon):
         super().__init__(all_sprites, group)
         self.image = Shoot.shoot_image
         self.rect = self.image.get_rect()
         self.rect.centerx, self.rect.centery = x, y
-        pygame.draw.circle(self.image, pygame.Color('white'), (5, 5), 5)
+        if hero.ammo == 0:
+            hero.weapon = 0
+        if hero.weapon != 0:
+            hero.ammo -= 1
+        if hero.weapon == 0:
+            pygame.draw.circle(self.image, pygame.Color('white'), (5, 5), 5)
+        elif hero.weapon == 1:
+            pygame.draw.circle(self.image, pygame.Color('grey'), (5, 5), 5)
+        elif hero.weapon == 2:
+            pygame.draw.circle(self.image, pygame.Color('red'), (5, 5), 5)
         self.image.set_colorkey(self.image.get_at((0, 0)))
         self.direction = angle
         self.v = 20
@@ -123,8 +155,36 @@ class Shoot(pygame.sprite.Sprite):
                 pygame.sprite.spritecollideany(self, zombie_group) or pygame.sprite.spritecollideany(self, box_group):
             zombie = pygame.sprite.spritecollideany(self, zombie_group)
             if zombie:
-                zombie.hp -= 1
+                if hero.weapon == 0:
+                    zombie.hp -= 1
+                if hero.weapon == 1:
+                    zombie.hp -= 2
+                if hero.weapon == 2:
+                    zombie.hp -= 10
+
             self.kill()
+
+
+class Weapon(pygame.sprite.Sprite):
+
+    def __init__(self, group, coords, name):
+        self.name = name
+        super().__init__(all_sprites, group)
+        weapon_image = load_image(name, size=(65, 52))
+        self.image = weapon_image
+        self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = coords
+        print(self.image)
+
+    def update(self):
+        if pygame.sprite.spritecollideany(self, hero_group):
+            self.kill()
+            if self.name == 'weapon_1.png':
+                hero.weapon = 1
+                hero.ammo = 20
+            else:
+                hero.weapon = 2
+                hero.ammo = 10
 
 
 class Zombie(pygame.sprite.Sprite):
@@ -159,6 +219,10 @@ class Zombie(pygame.sprite.Sprite):
     def update(self):
         if self.hp <= 0:
             self.kill()
+            if randint(1, 100) <= 20:
+                Weapon(weapon_group, (self.rect.x, self.rect.y), 'weapon_1.png')
+            elif randint(1, 100) <= 5:
+                Weapon(weapon_group, (self.rect.x, self.rect.y), 'Fire_gun.png')
         self.rect = self.rect.move(self.v * cos(self.direction), 0)
         if pygame.sprite.collide_rect(self, hero):
             hero.hp -= 100
@@ -187,8 +251,6 @@ class Box(pygame.sprite.Sprite):
 def new_room():
     if hero.rect[0] <= 0:
         hero.rect.x, hero.rect.y = 999, 370
-        for i in board_group:
-            i.rect.x, i.rect.y = i.rect.x - 1100, i.rect.y
     if hero.rect[0] >= width:
         hero.rect.x, hero.rect.y = 10, 370
     if hero.rect[1] <= 0:
@@ -231,7 +293,7 @@ zombie_group = pygame.sprite.Group()
 def start_screen():
     intro_text = ["Перемещение героя - " "Клавиши WASD",
                   "Стрельба - " " Мышь",
-                  "Цель:", "Найти выход и ВЫЖИТЬ"]
+                  "Цель:", "ВЫЖИТЬ"]
 
     fon = pygame.transform.scale(load_image('start_screen.png'), (1100, 800))
     screen.blit(fon, (0, 0))
@@ -252,7 +314,8 @@ def start_screen():
                 terminate()
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
-                return
+                start_date = datetime.datetime.now()
+                return start_date
         pygame.display.flip()
         clock.tick(50)
 
@@ -260,7 +323,8 @@ def start_screen():
 def final_screen(flag):
     if flag:
         name = 'loose_screen.webp'
-        intro_text = ["","","","","","","","                                                                                  Поражение"]
+        intro_text = ["", "", "", "", "", "", "",
+                      "                                                                                  Поражение"]
         color = 'red'
     else:
         name = 'final_screen.jpg'
@@ -287,7 +351,8 @@ def final_screen(flag):
         clock.tick(50)
 
 
-start_screen()
+st_time = start_screen()
+weapon_group = pygame.sprite.Group()
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -295,7 +360,7 @@ while running:
         if event.type == pygame.MOUSEMOTION:
             hero.change_direction(event.pos)
         if event.type == pygame.MOUSEBUTTONDOWN and pygame.mouse.get_pressed()[0] and not left_button_pressed:
-            Shoot(shoot_group, hero.rect.centerx, hero.rect.centery, hero.direction * pi / 180)
+            Shoot(shoot_group, hero.rect.centerx, hero.rect.centery, hero.direction * pi / 180, hero.weapon)
             left_button_pressed = True
         if event.type == pygame.MOUSEBUTTONUP and not pygame.mouse.get_pressed()[0]:
             left_button_pressed = False
@@ -314,9 +379,11 @@ while running:
     new_room()
     if hero.hp == 0:
         final_screen(True)
-
+    if (st_time - datetime.datetime.now()).seconds == 86099:
+        final_screen(False)
     screen.fill(pygame.Color('black'))
     all_sprites.draw(screen)
+    HP()
     all_sprites.update()
     pygame.display.flip()
     clock.tick(fps)
