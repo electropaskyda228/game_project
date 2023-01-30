@@ -3,7 +3,6 @@ import os
 import sys
 from random import randint
 from math import atan, pi, cos, sin
-from Random_Rooms import random_rooms
 import datetime
 
 pygame.init()
@@ -263,11 +262,9 @@ def new_room():
 
 
 board_group = pygame.sprite.Group()
-rooms = random_rooms()
-for n in rooms:
-    for i in range(width // Board.board_image.get_rect().width):
-        for j in range(height // Board.board_image.get_rect().height):
-            Board(board_group, i + n[0], j + n[1])
+for i in range(width // Board.board_image.get_rect().width):
+    for j in range(height // Board.board_image.get_rect().height):
+        Board(board_group, i, j)
 
 wall_group = pygame.sprite.Group()
 for i in range(width // Wall.wall_image.get_rect().width):
@@ -386,7 +383,6 @@ while running:
         final_screen(False)
     screen.fill(pygame.Color('black'))
     all_sprites.draw(screen)
-    print((st_time - datetime.datetime.now()).seconds)
     HP()
     all_sprites.update()
     pygame.display.flip()
