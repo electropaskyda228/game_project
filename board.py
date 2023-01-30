@@ -143,7 +143,11 @@ class Shoot(pygame.sprite.Sprite):
         elif hero.weapon == 1:
             pygame.draw.circle(self.image, pygame.Color('grey'), (5, 5), 5)
         elif hero.weapon == 2:
-            pygame.draw.circle(self.image, pygame.Color('red'), (5, 5), 5)
+            shoot_image = pygame.Surface([20, 20])
+            self.image = shoot_image
+            self.rect = self.image.get_rect()
+            self.rect.centerx, self.rect.centery = x, y
+            pygame.draw.circle(self.image, pygame.Color('red'), (10, 10), 10)
         self.image.set_colorkey(self.image.get_at((0, 0)))
         self.direction = angle
         self.v = 20
@@ -174,7 +178,6 @@ class Weapon(pygame.sprite.Sprite):
         self.image = weapon_image
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = coords
-        print(self.image)
 
     def update(self):
         if pygame.sprite.spritecollideany(self, hero_group):
@@ -383,6 +386,7 @@ while running:
         final_screen(False)
     screen.fill(pygame.Color('black'))
     all_sprites.draw(screen)
+    print((st_time - datetime.datetime.now()).seconds)
     HP()
     all_sprites.update()
     pygame.display.flip()
